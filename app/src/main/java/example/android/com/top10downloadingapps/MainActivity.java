@@ -2,14 +2,15 @@ package example.android.com.top10downloadingapps;
 
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.ListView;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,23 +19,48 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 public class MainActivity extends AppCompatActivity {
-
+    private Button btnParse;
+    private ListView listApps;
+    private String mFileContents;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        //instantiate
+        btnParse = (Button) findViewById(R.id.btnParse);
+        btnParse.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+               
+                ParseApp parseApp = new ParseApp(mFileContents);
+                parseApp.process();
+                //create adapter
+                ArrayAdapter <Application> arrayAdapter=new ArrayAdapter<Application>(
+                        MainActivity.this,R.layout.list_item, parseApp.getApplications());
+                listApps.setAdapter(arrayAdapter);
+            }
+        });
+
+        listApps = (ListView) findViewById(R.id.listView);
+
+        //create new instance of the downloadData class
+        DownloadData downloadData = new DownloadData();
+
+        downloadData.execute("http://ax.itunes.apple.com/WebObjects/MZStoreServices.woa/ws/RSS/topfreeapplications/limit=10/xml");
+
+
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+      /*  FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
             }
-        });
+        });*/
     }
 
     @Override
@@ -65,7 +91,6 @@ public class MainActivity extends AppCompatActivity {
     //3rd param is for result
     private class DownloadData extends AsyncTask<String, Void, String> {
 
-        private String mFileContents;
 
         @Override
         protected String doInBackground(String... params) {
@@ -74,6 +99,16 @@ public class MainActivity extends AppCompatActivity {
                 Log.d("DownloadData", "Error downloading");
             }
             return mFileContents;
+        }
+//once doinBackground complete we execute onPost methode
+
+
+        @Override
+        protected void onPostExecute(String result) {
+            super.onPostExecute(result);
+
+            Log.d("DownloadData", "Result was" + result);
+
         }
 
         private String downloadXMLFile(String urlPath) {
@@ -101,7 +136,13 @@ public class MainActivity extends AppCompatActivity {
                 return tempBuffer.toString();
             } catch (IOException e) {
                 Log.d("DownloadData", "IO Exception reading data:" + e.getMessage());
-            }return null;
+                //e.printStackTrace();
+            } catch (SecurityException e) {
+                Log.d("DownloadData", "Security Exception.Needs Permition?" + e.getMessage());
+
+            }
+
+            return null;
         }
 
 
